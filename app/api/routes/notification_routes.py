@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks
 from sqlalchemy.orm import Session
-from typing import List, Optional
+from typing import List, Optional, Any
 import json
 from app.core.security import get_db
 from ...models.notification_model import Notification, NotificationType, NotificationTarget
@@ -61,17 +61,20 @@ async def send_custom_notification(
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to send notification: {str(e)}")
 
-async def send_notifications_to_users(users: List[User], title: str, message: str, notification_id: int, db: Session):
-    """Background task to send notifications to users"""
+async def send_notifications_to_users(targets: List[Any], title: str, message: str, notification_id: int, db: Session):
+    """Background task to send notifications to targets (users or vendors)"""
     success_count = 0
     failure_count = 0
 
-    for user in users:
+    for target in targets:
         try:
-            # Send FCM notification if user has FCM token
-            if user.fcm_token:
+            # Check for FCM token in either new_fcm_token or fcm_token
+            # In our current models (User and ServiceProvider), the latest is new_fcm_token
+            fcm_token = getattr(target, 'new_fcm_token', None) or getattr(target, 'fcm_token', None)
+            
+            if fcm_token:
                 await send_push_notification(
-                    token=user.fcm_token,
+                    token=fcm_token,
                     title=title,
                     body=message,
                     data={
@@ -83,14 +86,16 @@ async def send_notifications_to_users(users: List[User], title: str, message: st
             else:
                 failure_count += 1
         except Exception as e:
-            print(f"Failed to send notification to user {user.id}: {str(e)}")
+            # Log failure with target ID if available
+            target_id = getattr(target, 'id', 'unknown')
+            print(f"Failed to send notification to target {target_id}: {str(e)}")
             failure_count += 1
 
     # Mark notification as sent
     notification_crud = NotificationCRUD(db)
     notification_crud.mark_notification_as_sent(notification_id)
 
-    print(f"Notification {notification_id} sent: {success_count} success, {failure_count} failures")
+    print(f"Notification {notification_id} process finished: {success_count} success, {failure_count} failures")
 
 @router.get("/")
 def get_notifications(

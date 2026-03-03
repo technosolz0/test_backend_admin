@@ -2,7 +2,8 @@ from sqlalchemy.orm import Session
 from sqlalchemy import and_, or_
 from ..models.notification_model import Notification, NotificationType, NotificationTarget
 from ..models.user import User
-from typing import List, Optional
+from ..models.service_provider_model import ServiceProvider
+from typing import List, Optional, Any
 import json
 
 class NotificationCRUD:
@@ -57,18 +58,21 @@ class NotificationCRUD:
             return True
         return False
 
-    def get_target_users(self, notification: Notification) -> List[User]:
+    def get_target_users(self, notification: Notification) -> List[Any]:
         """Get the list of target users for a notification"""
         if notification.target_type == NotificationTarget.ALL_USERS:
-            # Get all regular users (not admins/service providers)
-            return self.db.query(User).filter(User.role == "user").all()
+            # Get all regular users from users table
+            return self.db.query(User).all()
         elif notification.target_type == NotificationTarget.SPECIFIC_USERS:
             if notification.target_user_ids:
                 user_ids = json.loads(notification.target_user_ids)
-                return self.db.query(User).filter(User.id.in_(user_ids)).all()
+                # Search in both users and service_providers tables
+                users = self.db.query(User).filter(User.id.in_(user_ids)).all()
+                providers = self.db.query(ServiceProvider).filter(ServiceProvider.id.in_(user_ids)).all()
+                return users + providers
         elif notification.target_type == NotificationTarget.SERVICE_PROVIDERS:
-            # Get all service providers
-            return self.db.query(User).filter(User.role == "service_provider").all()
+            # Get all service providers from service_providers table
+            return self.db.query(ServiceProvider).all()
 
         return []
 
