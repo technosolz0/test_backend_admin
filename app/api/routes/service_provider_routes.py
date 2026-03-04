@@ -1,6 +1,6 @@
 # app/api/service_provider_routes.py - Fixed with proper error handling
 
-from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form, Body, status
+from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form, Body, status, Query
 from sqlalchemy.orm import Session
 from typing import List, Optional
 

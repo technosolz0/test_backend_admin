@@ -35,6 +35,7 @@ from app.api.routes import (
     withdrawal_routes, admin_withdrawal_routes,vendor_bank_routes,
     notification_routes,
     feedback_routes,
+    report_routes,
     review_routes,
 )
 

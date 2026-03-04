@@ -39,6 +39,8 @@ class ServiceProvider(Base):
     device_name = Column(String)
     last_device_update = Column(DateTime)
     step = Column(Integer, default=0, nullable=False)  # Registration step (0-5)
+    rating = Column(Float, default=0.0)
+    total_reviews = Column(Integer, default=0)
 
     # Referral fields
     referral_code = Column(String, unique=True, index=True)

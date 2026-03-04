@@ -10,6 +10,15 @@ class ReviewCRUD:
     def __init__(self, db: Session):
         self.db = db
 
+    def _update_vendor_rating(self, service_provider_id: int):
+        """Internal helper to aggregate and update vendor rating/reviews"""
+        stats = self.get_service_provider_rating_stats(service_provider_id)
+        vendor = self.db.query(ServiceProvider).filter(ServiceProvider.id == service_provider_id).first()
+        if vendor:
+            vendor.rating = stats["average_rating"]
+            vendor.total_reviews = stats["total_reviews"]
+            self.db.commit()
+
     def create_review(self, booking_id: int, user_id: int, service_provider_id: int,
                      rating: float, review_text: Optional[str] = None,
                      is_anonymous: bool = False) -> Review:
@@ -26,6 +35,10 @@ class ReviewCRUD:
         self.db.add(review)
         self.db.commit()
         self.db.refresh(review)
+        
+        # ✅ Update vendor rating cache
+        self._update_vendor_rating(service_provider_id)
+        
         return review
 
     def get_review_by_id(self, review_id: int) -> Optional[Review]:
@@ -67,7 +80,7 @@ class ReviewCRUD:
 
         return {
             "total_reviews": total_reviews,
-            "average_rating": round(average_rating, 1),
+            "average_rating": round(float(average_rating), 1),
             "rating_distribution": rating_distribution
         }
 
@@ -76,12 +89,17 @@ class ReviewCRUD:
         """Update review rating and/or text"""
         review = self.get_review_by_id(review_id)
         if review:
+            vendor_id = review.service_provider_id
             if rating is not None:
                 review.rating = rating
             if review_text is not None:
                 review.review_text = review_text
             self.db.commit()
             self.db.refresh(review)
+            
+            # ✅ Update vendor rating cache
+            self._update_vendor_rating(vendor_id)
+            
             return review
         return None
 
@@ -89,8 +107,13 @@ class ReviewCRUD:
         """Delete a review"""
         review = self.get_review_by_id(review_id)
         if review:
+            vendor_id = review.service_provider_id
             self.db.delete(review)
             self.db.commit()
+            
+            # ✅ Update vendor rating cache
+            self._update_vendor_rating(vendor_id)
+            
             return True
         return False
 

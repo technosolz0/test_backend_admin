@@ -785,14 +785,31 @@ def verify_payment(
         try:
             razorpay_client.utility.verify_payment_signature(signature_params)
 
+            # ✅ Fetch specific payment method from Razorpay
+            rzp_payment = razorpay_client.payment.fetch(verification.razorpay_payment_id)
+            rzp_method = rzp_payment.get("method", "razorpay").lower()
+            
+            # Map Razorpay method to our enum
+            method_map = {
+                "upi": PaymentMethod.RAZORPAY_UPI,
+                "card": PaymentMethod.RAZORPAY_CARD,
+                "netbanking": PaymentMethod.RAZORPAY_NETBANKING,
+                "wallet": PaymentMethod.RAZORPAY_WALLET
+            }
+            specific_method = method_map.get(rzp_method, PaymentMethod.RAZORPAY)
+
             # Update payment status to success
             updated_payment = payment_crud.update_payment_status(
                 db, payment, PaymentStatus.SUCCESS,
                 verification.razorpay_payment_id,
                 verification.razorpay_signature
             )
+            
+            # Update specific method
+            updated_payment.payment_method = specific_method
+            db.commit()
 
-            logger.info(f"Payment verified successfully: Payment ID {payment.id}")
+            logger.info(f"Payment verified successfully: ID {payment.id}, Method: {specific_method}")
 
             return {
                 "status": "success",
