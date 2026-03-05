@@ -1,18 +1,18 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from sqlalchemy import func
-from app.core.security import get_db
+from app.core.security import get_db, get_current_vendor
 from app.models.service_provider_model import ServiceProvider
 from app.models.vendor_earnings_model import VendorEarnings
-from app.api.routes.service_provider_routes import get_current_vendor_id
 
 router = APIRouter(prefix="/vendor/referral", tags=["vendor-referral"])
 
 @router.get("/stats")
 def get_referral_stats(
     db: Session = Depends(get_db),
-    vendor_id: int = Depends(get_current_vendor_id)
+    current_vendor: ServiceProvider = Depends(get_current_vendor)
 ):
+    vendor_id = current_vendor.id
     # Total referred (started registration)
     total_referred = db.query(ServiceProvider).filter(ServiceProvider.referred_by_id == vendor_id).count()
     
@@ -27,11 +27,9 @@ def get_referral_stats(
         VendorEarnings.referrer_id == vendor_id
     ).scalar() or 0.0
     
-    vendor = db.query(ServiceProvider).filter(ServiceProvider.id == vendor_id).first()
-    
     return {
         "total_referred": total_referred,
         "total_registered": total_registered,
         "total_earnings": total_earnings,
-        "referral_code": vendor.referral_code if vendor else ""
+        "referral_code": current_vendor.referral_code
     }
