@@ -56,7 +56,7 @@ class VendorCreate(BaseModel):
     latitude: Optional[float] = None
     longitude: Optional[float] = None
     device_name: Optional[str] = None
-    referred_by_code: Optional[str] = None
+    referral_code: Optional[str] = None
 
 class AddressDetailsUpdate(BaseModel):
     address: str

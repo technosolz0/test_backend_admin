@@ -34,11 +34,22 @@ from pathlib import Path
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
 
-def generate_referral_code(db: Session, length=8) -> str:
-    """Generate a unique referral code for a vendor."""
-    alphabet = string.ascii_uppercase + string.digits
+def generate_referral_code(db: Session, full_name: str, length=4) -> str:
+    """Generate a unique referral code: First 1-2 initials + 4 digits."""
+    # Get initials
+    parts = full_name.split()
+    initials = ""
+    if len(parts) >= 2:
+        initials = (parts[0][0] + parts[-1][0]).upper()
+    elif len(parts) == 1:
+        initials = parts[0][:2].upper()
+    else:
+        initials = "SX" # Fallback
+        
+    digits = string.digits
     while True:
-        code = ''.join(secrets.choice(alphabet) for _ in range(length))
+        random_part = ''.join(secrets.choice(digits) for _ in range(length))
+        code = f"{initials}{random_part}"
         # Check if code already exists
         exists = db.query(ServiceProvider).filter(ServiceProvider.referral_code == code).first()
         if not exists:
@@ -331,17 +342,30 @@ def create_vendor(db: Session, vendor: VendorCreate) -> Dict[str, Any]:
             status='pending',
             admin_status='inactive',
             work_status='work_on',
-            referral_code=generate_referral_code(db)
+            referral_code=generate_referral_code(db, vendor.full_name)
         )
         
         # Handle referral
-        if vendor.referred_by_code:
-            referrer = db.query(ServiceProvider).filter(ServiceProvider.referral_code == vendor.referred_by_code).first()
-            if referrer:
-                db_vendor.referred_by_id = referrer.id
-                logger.info(f"Vendor {vendor.email} referred by {referrer.email} (ID: {referrer.id})")
+        if vendor.referral_code:
+            # Check Admin Referral Codes first
+            from app.models.referral_model import AdminReferralCode
+            admin_ref = db.query(AdminReferralCode).filter(AdminReferralCode.code == vendor.referral_code).first()
+            if admin_ref:
+                db_vendor.applied_referral_code = admin_ref.code
+                db_vendor.referral_type = 'admin'
+                logger.info(f"Vendor {vendor.email} registered using ADMIN referral code: {admin_ref.code}")
             else:
-                logger.warning(f"Invalid referral code used during registration: {vendor.referred_by_code}")
+                # Check Vendor Referral Codes
+                referrer = db.query(ServiceProvider).filter(ServiceProvider.referral_code == vendor.referral_code).first()
+                if referrer:
+                    db_vendor.referred_by_id = referrer.id
+                    db_vendor.applied_referral_code = referrer.referral_code
+                    db_vendor.referral_type = 'vendor'
+                    logger.info(f"Vendor {vendor.email} referred by Vendor: {referrer.email} (ID: {referrer.id})")
+                else:
+                    logger.warning(f"Invalid referral code used during registration: {vendor.referral_code}")
+                    # Still allow registration but log warning
+
                 
         db.add(db_vendor)
         db.commit()

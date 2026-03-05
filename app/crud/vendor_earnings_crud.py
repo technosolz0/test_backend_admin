@@ -21,7 +21,7 @@ def create_vendor_earnings(db: Session, booking_id: int, vendor_id: int,
     completed_count = get_completed_bookings_count(db, vendor_id)
     
     # Calculate dynamic commission based on slabs
-    calc_percentage, calc_amount = calculate_commission(total_paid, completed_count)
+    calc_percentage, calc_amount = calculate_commission(db, vendor, total_paid, completed_count)
     
     # Use calculated values unless explicitly overridden
     final_percentage = commission_percentage if commission_percentage is not None else calc_percentage

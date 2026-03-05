@@ -1,6 +1,7 @@
 from sqlalchemy.orm import Session
 from sqlalchemy import func
 from app.models.booking_model import Booking, BookingStatus
+from app.models.service_provider_model import ServiceProvider
 
 def get_completed_bookings_count(db: Session, vendor_id: int) -> int:
     """
@@ -12,14 +13,25 @@ def get_completed_bookings_count(db: Session, vendor_id: int) -> int:
         Booking.status == BookingStatus.completed
     ).scalar() or 0
 
-def get_commission_percentage(completed_bookings: int) -> float:
+def get_commission_percentage(db: Session, vendor: ServiceProvider, completed_bookings: int) -> float:
     """
-    Determine commission percentage based on completed bookings count.
-    - First 5 completed bookings: 0%
-    - Next 15 (6-20): 5%
-    - Next 30 (21-50): 10%
-    - After 50: 15%
+    Determine commission percentage based on completed bookings count and referral type.
+    
+    1. Admin Referral: Uses custom bookings count and percentage from AdminReferralCode.
+    2. Vendor Referral: First 5 bookings 0%, then standard steps.
+    3. No Referral: First 5 bookings 0%, then standard steps (Same as vendor referral for now).
     """
+    
+    # Handle Admin Referral Override
+    if vendor.referral_type == 'admin' and vendor.applied_referral_code:
+        from app.models.referral_model import AdminReferralCode
+        admin_ref = db.query(AdminReferralCode).filter(AdminReferralCode.code == vendor.applied_referral_code).first()
+        if admin_ref:
+            if completed_bookings <= admin_ref.no_of_bookings:
+                return admin_ref.commission_percentage
+
+    # Handle Vendor Referral or Standard Logic
+    # (Requirement: Vendor referral = first 5 bookings 0%)
     if completed_bookings <= 5:
         return 0.0
     elif completed_bookings <= 20:
@@ -29,12 +41,12 @@ def get_commission_percentage(completed_bookings: int) -> float:
     else:
         return 15.0
 
-def calculate_commission(total_paid: float, completed_bookings: int) -> tuple[float, float]:
+def calculate_commission(db: Session, vendor: ServiceProvider, total_paid: float, completed_bookings: int) -> tuple[float, float]:
     """
     Calculate commission amount and percentage.
     Returns (commission_percentage, commission_amount)
     """
-    percentage = get_commission_percentage(completed_bookings)
+    percentage = get_commission_percentage(db, vendor, completed_bookings)
     amount = (total_paid * percentage) / 100
     return percentage, amount
 

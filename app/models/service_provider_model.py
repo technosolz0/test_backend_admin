@@ -45,6 +45,8 @@ class ServiceProvider(Base):
     # Referral fields
     referral_code = Column(String, unique=True, index=True)
     referred_by_id = Column(Integer, ForeignKey("service_providers.id"), nullable=True)
+    applied_referral_code = Column(String, nullable=True)
+    referral_type = Column(SAEnum('vendor', 'admin', name='referral_type'), nullable=True)
 
     status = Column(SAEnum('pending', 'approved', 'rejected', 'inactive', name='vendor_status'), default='approved')
     admin_status = Column(SAEnum('active', 'inactive', name='admin_status'), default='inactive')
