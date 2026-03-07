@@ -16,6 +16,8 @@ class BookingCreate(BaseModel):
     subcategory_id: int = Field(..., description="Subcategory ID")
     scheduled_time: datetime = Field(..., description="Scheduled datetime for booking")
     address: str = Field(..., description="Booking address")
+    booking_latitude: Optional[float] = Field(None, description="Latitude of booking address")
+    booking_longitude: Optional[float] = Field(None, description="Longitude of booking address")
     status: Optional[BookingStatus] = Field(BookingStatus.pending, description="Booking status")
 
 class BookingUpdate(BaseModel):
@@ -38,6 +40,8 @@ class BookingOut(BaseModel):
 
     scheduled_time: datetime
     address: str
+    booking_latitude: Optional[float] = None
+    booking_longitude: Optional[float] = None
     status: BookingStatus
     created_at: datetime
     otp: Optional[str] = None

@@ -38,7 +38,8 @@ from app.api.routes import (
     report_routes,
     review_routes,
     referral_routes,
-    referral_stats_routes
+    referral_stats_routes,
+    nearby_vendor_routes,
 )
 
 # -------------------------
@@ -127,6 +128,11 @@ app.include_router(report_routes.router, prefix="/api", tags=["reports"])
 app.include_router(review_routes.router, prefix="/api/reviews", tags=["reviews"])
 app.include_router(referral_routes.router, prefix="/api")
 app.include_router(referral_stats_routes.router, prefix="/api")
+
+# =============================================
+# Nearby Vendor + Live Location + Booking Flow
+# =============================================
+app.include_router(nearby_vendor_routes.router, prefix="/api", tags=["Nearby & Location"])
 
 # -------------------------
 # Custom OpenAPI with JWT

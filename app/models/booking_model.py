@@ -1,6 +1,5 @@
 
-
-from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, Enum
+from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, Enum, Float
 from sqlalchemy.orm import relationship
 from datetime import datetime
 import enum
@@ -22,7 +21,9 @@ class Booking(Base):
     category_id = Column(Integer, ForeignKey("categories.id"))
     subcategory_id = Column(Integer, ForeignKey("sub_categories.id"))
     scheduled_time = Column(DateTime, nullable=True)
-    address = Column(String, nullable=False)  # Add this field
+    address = Column(String, nullable=False)
+    booking_latitude = Column(Float, nullable=True)   # User location lat for navigation
+    booking_longitude = Column(Float, nullable=True)  # User location lng for navigation
     status = Column(Enum(BookingStatus), default=BookingStatus.pending)
     created_at = Column(DateTime, default=datetime.utcnow)
     otp = Column(String, nullable=True)
