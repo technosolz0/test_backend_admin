@@ -82,7 +82,14 @@ def verify_otp(data: OTPVerify, db: Session = Depends(get_db)):
     # ✅ Generate access token with role="vendor"
     access_token = create_access_token(
         data={"sub": vendor.email},
-        role="vendor"  # Important: Specify role for vendor authentication
+        role="vendor"
+    )
+    
+    # ✅ Generate refresh token (30 days)
+    refresh_token = create_access_token(
+        data={"sub": vendor.email},
+        token_type="refresh",
+        role="vendor"
     )
     
     logger.info(f"Vendor OTP verified successfully: {data.email}")
@@ -92,6 +99,7 @@ def verify_otp(data: OTPVerify, db: Session = Depends(get_db)):
         "vendor_id": vendor.id,
         "step": vendor.step,
         "access_token": access_token,
+        "refresh_token": refresh_token,
         "token_type": "bearer",
         "vendor": vendor
     }
@@ -538,7 +546,7 @@ def refresh_vendor_token(
     - 401: Invalid or expired refresh token
     """
     from jose import jwt, JWTError, ExpiredSignatureError
-    from app.core.config import SECRET_KEY, ALGORITHM
+    from app.core.security import SECRET_KEY, ALGORITHM
 
     refresh_token = refresh_data.get("refresh_token")
 
@@ -590,11 +598,19 @@ def refresh_vendor_token(
             role="vendor"
         )
 
+        # Generate new refresh token (rotation)
+        new_refresh_token = create_access_token(
+            data={"sub": email},
+            token_type="refresh",
+            role="vendor"
+        )
+
         logger.info(f"Access token refreshed for vendor: {email}")
         return {
             "success": True,
             "message": "Access token refreshed successfully",
             "access_token": new_access_token,
+            "refresh_token": new_refresh_token,
             "token_type": "bearer"
         }
 
