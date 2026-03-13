@@ -663,10 +663,11 @@ def create_order(
 ):
     """Create a Razorpay order for payment with booking validation"""
     if not razorpay_client:
-        logger.error("Razorpay client is not initialized")
+        reason = "Razorpay package not installed" if not RAZORPAY_AVAILABLE else "Razorpay credentials missing"
+        logger.error(f"Razorpay client is not initialized: {reason}")
         raise HTTPException(
             status_code=503,
-            detail="Payment service is currently unavailable. Please try again later."
+            detail=f"Payment service is currently unavailable ({reason}). Please try again later."
         )
 
     try:
