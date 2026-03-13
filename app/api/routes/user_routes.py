@@ -16,7 +16,7 @@ from jose import jwt, JWTError
 
 logger = logging.getLogger(__name__)
 
-router = APIRouter(prefix="/users", tags=["User Management & Auth"])
+router = APIRouter(prefix="/users", tags=["User Management & Auth"], strict_slashes=False)
 
 
 # ================= REGISTRATION ENDPOINTS =================

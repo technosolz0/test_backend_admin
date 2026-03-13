@@ -19,7 +19,7 @@ from app.models.user import User
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-router = APIRouter(tags=["Nearby & Location"])
+router = APIRouter(tags=["Nearby & Location"], strict_slashes=False)
 
 
 # ─────────────────────────────────────────────

@@ -7,7 +7,7 @@ from app.utils.image_utils import compress_image
 import os
 from uuid import uuid4
 
-router = APIRouter(prefix="/categories", tags=["categories"])
+router = APIRouter(prefix="/categories", tags=["categories"], strict_slashes=False)
 
 # -------------------------------------------------------------------
 # POST: Create New Category with compressed image

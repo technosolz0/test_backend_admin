@@ -27,7 +27,7 @@ import logging
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
 
-router = APIRouter(prefix="/vendor", tags=["vendor"])
+router = APIRouter(prefix="/vendor", tags=["vendor"], strict_slashes=False)
 
 
 # =================== REGISTRATION ENDPOINTS ===================

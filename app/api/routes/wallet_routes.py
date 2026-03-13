@@ -5,7 +5,7 @@ from app.core.security import get_db
 from app.schemas.wallet_schema import WalletCreate, WalletUpdate, WalletOut
 from app.crud import wallet_crud
 
-router = APIRouter(prefix="/wallets", tags=["Wallets"])
+router = APIRouter(prefix="/wallets", tags=["Wallets"], strict_slashes=False)
 
 @router.post("", response_model=WalletOut)
 def create_wallet(wallet: WalletCreate, db: Session = Depends(get_db)):
