@@ -163,9 +163,9 @@ def get_nearby_vendors(
                 if subcategory_id is None or charge.subcategory_id == subcategory_id:
                     charges.append({
                         "subcategory_id": charge.subcategory_id,
-                        "subcategory_name": charge.subcategory_name,
-                        "price": charge.price,
-                        "description": charge.description,
+                        "subcategory_name": charge.subcategory.name if charge.subcategory else "N/A",
+                        "price": charge.service_charge,
+                        "description": getattr(charge, 'description', ''),
                     })
 
             # Skip vendor if subcategory filter given and vendor has no matching charges

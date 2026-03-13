@@ -29,7 +29,7 @@ def save_image(image: UploadFile, old_image: str = None) -> str:
     return f"/{UPLOAD_DIR}/{filename}"
 
 
-@router.post("/", response_model=SubCategoryOut, status_code=status.HTTP_201_CREATED)
+@router.post("", response_model=SubCategoryOut, status_code=status.HTTP_201_CREATED)
 def create_sub_category(
     name: str = Form(...),
     status: SubCategoryStatus = Form(default=SubCategoryStatus.active),
@@ -53,7 +53,7 @@ def create_sub_category(
     return new_sub_category
 
 
-@router.get("/", response_model=list[SubCategoryOut])
+@router.get("", response_model=list[SubCategoryOut])
 def list_sub_categories(db: Session = Depends(get_db)):
     return db.query(SubCategory).all()
 

@@ -443,7 +443,7 @@ def update_work_status(
 
 # =================== ADMIN ENDPOINTS ===================
 
-@router.get("/", response_model=PaginatedVendorsResponse)
+@router.get("", response_model=PaginatedVendorsResponse)
 def get_all_vendors_endpoint(
     db: Session = Depends(get_db),
     page: int = 1,

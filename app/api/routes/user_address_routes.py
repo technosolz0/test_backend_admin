@@ -12,7 +12,7 @@ router = APIRouter(prefix="/user", tags=["User Address"])
 def add_address(data: user_address_schema.UserAddressCreate, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     return crud_address.create_address(db, current_user.id, data)
 
-@router.get("/", response_model=List[user_address_schema.UserAddressOut])
+@router.get("", response_model=List[user_address_schema.UserAddressOut])
 def list_addresses(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     return crud_address.get_addresses(db, current_user.id)
 
