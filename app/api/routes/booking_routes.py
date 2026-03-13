@@ -21,7 +21,7 @@ from app.utils.fcm import send_notification
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
-router = APIRouter(prefix="/bookings", tags=["Booking"], strict_slashes=False)
+router = APIRouter(prefix="/bookings", tags=["Booking"])
 
 # Remove custom get_current_identity - use the one from security.py
 # (If you still need it, alias it, but unified is better)

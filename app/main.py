@@ -45,7 +45,7 @@ from app.api.routes import (
 # -------------------------
 # Initialize FastAPI app
 # -------------------------
-app = FastAPI()
+app = FastAPI(strict_slashes=False)
 
 # Mount static directory
 app.mount("/static", StaticFiles(directory="static"), name="static")

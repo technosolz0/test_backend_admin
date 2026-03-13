@@ -6,7 +6,7 @@ from app.schemas.sub_category_schema import SubCategoryOut, SubCategoryStatus
 import os, shutil
 from uuid import uuid4
 
-router = APIRouter(prefix="/subcategories", tags=["subcategories"], strict_slashes=False)
+router = APIRouter(prefix="/subcategories", tags=["subcategories"])
 
 UPLOAD_DIR = "static/uploads"
 os.makedirs(UPLOAD_DIR, exist_ok=True)

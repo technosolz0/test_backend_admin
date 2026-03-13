@@ -6,7 +6,7 @@ from app.models.user import User
 from app.schemas import user_address_schema
 from app.crud import user_address_crud as crud_address
 
-router = APIRouter(prefix="/address", tags=["User Address"], strict_slashes=False)
+router = APIRouter(prefix="/address", tags=["User Address"])
 
 @router.post("", response_model=user_address_schema.UserAddressOut)
 def add_address(data: user_address_schema.UserAddressCreate, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
