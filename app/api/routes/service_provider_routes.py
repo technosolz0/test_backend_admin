@@ -748,14 +748,16 @@ def get_nearby_vendors(
 
             return R * c
 
-        # Query vendors with the specified category and subcategory
         # Only active, approved and online vendors
-        vendors = db.query(ServiceProvider).filter(
-            ServiceProvider.category_id == category_id,
-            ServiceProvider.status == 'approved',
-            ServiceProvider.admin_status == 'active',
-            ServiceProvider.work_status == 'work_on'
+        all_vendors_in_db = db.query(ServiceProvider).filter(
+            ServiceProvider.category_id == category_id
         ).all()
+        
+        logger.info(f"📍 Nearby Search: Found {len(all_vendors_in_db)} total vendors for category {category_id}")
+
+        vendors = [v for v in all_vendors_in_db if v.status == 'approved' and v.admin_status == 'active' and v.work_status == 'work_on']
+        
+        logger.info(f"📍 Nearby Search: {len(vendors)} vendors are approved, active, and ONLINE")
 
         nearby_vendors = []
 
@@ -782,11 +784,12 @@ def get_nearby_vendors(
                 float(vendor.longitude) if vendor.longitude is not None else None
             )
 
-            # Condition 1: Within radius OR Condition 2: Same PIN code
+            # Fallback for unknown location: show all relevant vendors
             is_nearby = (distance <= radius_km)
             is_same_pincode = (user_pincode and vendor.pincode == user_pincode)
+            location_unknown = (user_lat == 0.0 and user_lng == 0.0 and not user_pincode)
 
-            if is_nearby or is_same_pincode:
+            if location_unknown or is_nearby or is_same_pincode:
                 vendor_data = {
                     "id": vendor.id,
                     "full_name": vendor.full_name,
