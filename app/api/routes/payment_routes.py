@@ -617,6 +617,13 @@ import logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+# --- DIAGNOSTICS ---
+logger.info(f"PAYMENT MODULE LOADING: RAZORPAY_AVAILABLE={RAZORPAY_AVAILABLE}")
+logger.info(f"KEYS CHECK: ID={'PRESENT' if settings.RAZORPAY_KEY_ID else 'MISSING'}, SECRET={'PRESENT' if settings.RAZORPAY_KEY_SECRET else 'MISSING'}")
+if settings.RAZORPAY_KEY_ID:
+    logger.info(f"KEY_ID prefix: {settings.RAZORPAY_KEY_ID[:8]}...")
+# --------------------
+
 router = APIRouter(prefix="/payments", tags=["Payment"])
 
 # Initialize Razorpay client
