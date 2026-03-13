@@ -598,9 +598,11 @@ from pydantic import BaseModel
 try:
     import razorpay
     RAZORPAY_AVAILABLE = True
-except ImportError:
+    RAZORPAY_IMPORT_ERROR = None
+except Exception as e:
     RAZORPAY_AVAILABLE = False
     razorpay = None
+    RAZORPAY_IMPORT_ERROR = str(e)
 import hmac
 import hashlib
 import json
@@ -619,6 +621,8 @@ logger = logging.getLogger(__name__)
 
 # --- DIAGNOSTICS ---
 logger.info(f"PAYMENT MODULE LOADING: RAZORPAY_AVAILABLE={RAZORPAY_AVAILABLE}")
+if not RAZORPAY_AVAILABLE:
+    logger.error(f"RAZORPAY IMPORT FAILED: {RAZORPAY_IMPORT_ERROR}")
 logger.info(f"KEYS CHECK: ID={'PRESENT' if settings.RAZORPAY_KEY_ID else 'MISSING'}, SECRET={'PRESENT' if settings.RAZORPAY_KEY_SECRET else 'MISSING'}")
 if settings.RAZORPAY_KEY_ID:
     logger.info(f"KEY_ID prefix: {settings.RAZORPAY_KEY_ID[:8]}...")
