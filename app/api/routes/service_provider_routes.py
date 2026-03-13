@@ -744,7 +744,7 @@ def get_nearby_vendors(
             dlng = lng2_rad - lng1_rad
 
             a = math.sin(dlat/2)**2 + math.cos(lat1_rad) * math.cos(lat2_rad) * math.sin(dlng/2)**2
-            c = 2 * math.atan2(math.sqrt(a), math.sqrt(1-a))
+            c = 2 * math.atan2(math.sqrt(a), math.sqrt(max(0, 1-a)))
 
             return R * c
 
@@ -782,6 +782,7 @@ def get_nearby_vendors(
                 user_lat, user_lng,
                 float(vendor.latitude) if vendor.latitude is not None else None, 
                 float(vendor.longitude) if vendor.longitude is not None else None
+                
             )
 
             # Fallback for unknown location: show all relevant vendors
@@ -833,8 +834,10 @@ def get_nearby_vendors(
         }
 
     except Exception as e:
-        logger.error(f"Error fetching nearby vendors: {str(e)}", exc_info=True)
+        import traceback
+        error_trace = traceback.format_exc()
+        logger.error(f"Error fetching nearby vendors: {str(e)}\n{error_trace}")
         raise HTTPException(
             status_code=500,
-            detail="Unexpected error occurred while fetching nearby vendors."
+            detail=f"Error: {str(e)}"
         )
