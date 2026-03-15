@@ -115,7 +115,7 @@ def enrich_booking(db: Session, booking) -> dict:
     
     return booking_dict
 
-@router.post("/", response_model=dict)
+@router.post("", response_model=dict)
 def create_booking(
     booking: BookingCreate,
     db: Session = Depends(get_db),
@@ -147,7 +147,7 @@ def create_booking(
 
     return enrich_booking(db, booking_result)
 
-@router.get("/", response_model=List[dict])
+@router.get("", response_model=List[dict])
 def get_all_bookings(
     db: Session = Depends(get_db),
     user=Depends(get_current_user),

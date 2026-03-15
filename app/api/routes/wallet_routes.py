@@ -5,9 +5,9 @@ from app.core.security import get_db
 from app.schemas.wallet_schema import WalletCreate, WalletUpdate, WalletOut
 from app.crud import wallet_crud
 
-router = APIRouter(prefix="/wallets", tags=["Wallets"])
+router = APIRouter(prefix="/wallet", tags=["wallet"])
 
-@router.post("/", response_model=WalletOut)
+@router.post("", response_model=WalletOut)
 def create_wallet(wallet: WalletCreate, db: Session = Depends(get_db)):
     try:
         return wallet_crud.create_wallet(
@@ -50,7 +50,7 @@ def update_wallet_balance(wallet_id: int, update_data: WalletUpdate, db: Session
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
 
-@router.get("/", response_model=List[WalletOut])
+@router.get("", response_model=List[WalletOut])
 def get_all_wallets(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
     return wallet_crud.get_all_wallets(db, skip, limit)
 

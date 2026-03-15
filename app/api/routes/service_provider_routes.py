@@ -27,7 +27,7 @@ import logging
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
 
-router = APIRouter(prefix="/vendor", tags=["vendor"])
+router = APIRouter(prefix="/vendor", tags=["Vendor"])
 
 
 # =================== REGISTRATION ENDPOINTS ===================
@@ -82,7 +82,14 @@ def verify_otp(data: OTPVerify, db: Session = Depends(get_db)):
     # ✅ Generate access token with role="vendor"
     access_token = create_access_token(
         data={"sub": vendor.email},
-        role="vendor"  # Important: Specify role for vendor authentication
+        role="vendor"
+    )
+    
+    # ✅ Generate refresh token (30 days)
+    refresh_token = create_access_token(
+        data={"sub": vendor.email},
+        token_type="refresh",
+        role="vendor"
     )
     
     logger.info(f"Vendor OTP verified successfully: {data.email}")
@@ -92,6 +99,7 @@ def verify_otp(data: OTPVerify, db: Session = Depends(get_db)):
         "vendor_id": vendor.id,
         "step": vendor.step,
         "access_token": access_token,
+        "refresh_token": refresh_token,
         "token_type": "bearer",
         "vendor": vendor
     }
@@ -435,7 +443,7 @@ def update_work_status(
 
 # =================== ADMIN ENDPOINTS ===================
 
-@router.get("/", response_model=PaginatedVendorsResponse)
+@router.get("", response_model=PaginatedVendorsResponse)
 def get_all_vendors_endpoint(
     db: Session = Depends(get_db),
     page: int = 1,
@@ -538,7 +546,7 @@ def refresh_vendor_token(
     - 401: Invalid or expired refresh token
     """
     from jose import jwt, JWTError, ExpiredSignatureError
-    from app.core.config import SECRET_KEY, ALGORITHM
+    from app.core.security import SECRET_KEY, ALGORITHM
 
     refresh_token = refresh_data.get("refresh_token")
 
@@ -590,11 +598,19 @@ def refresh_vendor_token(
             role="vendor"
         )
 
+        # Generate new refresh token (rotation)
+        new_refresh_token = create_access_token(
+            data={"sub": email},
+            token_type="refresh",
+            role="vendor"
+        )
+
         logger.info(f"Access token refreshed for vendor: {email}")
         return {
             "success": True,
             "message": "Access token refreshed successfully",
             "access_token": new_access_token,
+            "refresh_token": new_refresh_token,
             "token_type": "bearer"
         }
 
@@ -728,18 +744,20 @@ def get_nearby_vendors(
             dlng = lng2_rad - lng1_rad
 
             a = math.sin(dlat/2)**2 + math.cos(lat1_rad) * math.cos(lat2_rad) * math.sin(dlng/2)**2
-            c = 2 * math.atan2(math.sqrt(a), math.sqrt(1-a))
+            c = 2 * math.atan2(math.sqrt(a), math.sqrt(max(0, 1-a)))
 
             return R * c
 
-        # Query vendors with the specified category and subcategory
         # Only active, approved and online vendors
-        vendors = db.query(ServiceProvider).filter(
-            ServiceProvider.category_id == category_id,
-            ServiceProvider.status == 'approved',
-            ServiceProvider.admin_status == 'active',
-            ServiceProvider.work_status == 'work_on'
+        all_vendors_in_db = db.query(ServiceProvider).filter(
+            ServiceProvider.category_id == category_id
         ).all()
+        
+        logger.info(f"📍 Nearby Search: Found {len(all_vendors_in_db)} total vendors for category {category_id}")
+
+        vendors = [v for v in all_vendors_in_db if v.status == 'approved' and v.admin_status == 'active' and v.work_status == 'work_on']
+        
+        logger.info(f"📍 Nearby Search: {len(vendors)} vendors are approved, active, and ONLINE")
 
         nearby_vendors = []
 
@@ -750,9 +768,9 @@ def get_nearby_vendors(
                 if charge.subcategory_id == subcategory_id:
                     vendor_charges.append({
                         "subcategory_id": charge.subcategory_id,
-                        "subcategory_name": charge.subcategory_name,
-                        "price": charge.price,
-                        "description": charge.description
+                        "subcategory_name": charge.subcategory.name if charge.subcategory else "N/A",
+                        "price": charge.service_charge,
+                        "description": getattr(charge, 'description', '')
                     })
 
             # Skip vendor if no charges for this subcategory
@@ -764,13 +782,15 @@ def get_nearby_vendors(
                 user_lat, user_lng,
                 float(vendor.latitude) if vendor.latitude is not None else None, 
                 float(vendor.longitude) if vendor.longitude is not None else None
+                
             )
 
-            # Condition 1: Within radius OR Condition 2: Same PIN code
+            # Fallback for unknown location: show all relevant vendors
             is_nearby = (distance <= radius_km)
             is_same_pincode = (user_pincode and vendor.pincode == user_pincode)
+            location_unknown = (user_lat == 0.0 and user_lng == 0.0 and not user_pincode)
 
-            if is_nearby or is_same_pincode:
+            if location_unknown or is_nearby or is_same_pincode:
                 vendor_data = {
                     "id": vendor.id,
                     "full_name": vendor.full_name,
@@ -814,8 +834,10 @@ def get_nearby_vendors(
         }
 
     except Exception as e:
-        logger.error(f"Error fetching nearby vendors: {str(e)}", exc_info=True)
+        import traceback
+        error_trace = traceback.format_exc()
+        logger.error(f"Error fetching nearby vendors: {str(e)}\n{error_trace}")
         raise HTTPException(
             status_code=500,
-            detail="Unexpected error occurred while fetching nearby vendors."
+            detail=f"Error: {str(e)}"
         )

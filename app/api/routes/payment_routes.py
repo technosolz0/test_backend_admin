@@ -598,9 +598,11 @@ from pydantic import BaseModel
 try:
     import razorpay
     RAZORPAY_AVAILABLE = True
-except ImportError:
+    RAZORPAY_IMPORT_ERROR = None
+except Exception as e:
     RAZORPAY_AVAILABLE = False
     razorpay = None
+    RAZORPAY_IMPORT_ERROR = str(e)
 import hmac
 import hashlib
 import json
@@ -617,6 +619,15 @@ import logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+# --- DIAGNOSTICS ---
+logger.info(f"PAYMENT MODULE LOADING: RAZORPAY_AVAILABLE={RAZORPAY_AVAILABLE}")
+if not RAZORPAY_AVAILABLE:
+    logger.error(f"RAZORPAY IMPORT FAILED: {RAZORPAY_IMPORT_ERROR}")
+logger.info(f"KEYS CHECK: ID={'PRESENT' if settings.RAZORPAY_KEY_ID else 'MISSING'}, SECRET={'PRESENT' if settings.RAZORPAY_KEY_SECRET else 'MISSING'}")
+if settings.RAZORPAY_KEY_ID:
+    logger.info(f"KEY_ID prefix: {settings.RAZORPAY_KEY_ID[:8]}...")
+# --------------------
+
 router = APIRouter(prefix="/payments", tags=["Payment"])
 
 # Initialize Razorpay client
@@ -629,6 +640,8 @@ if RAZORPAY_AVAILABLE:
             razorpay_client = razorpay.Client(
                 auth=(settings.RAZORPAY_KEY_ID, settings.RAZORPAY_KEY_SECRET)
             )
+            # Verify client works (simple check)
+            razorpay_client.set_app_details({"title": "Serwex", "version": "1.0.0"})
             logger.info("Razorpay client initialized successfully")
     except Exception as e:
         logger.error(f"Failed to initialize Razorpay client: {str(e)}")
@@ -653,6 +666,14 @@ def create_order(
     user=Depends(get_current_user)
 ):
     """Create a Razorpay order for payment with booking validation"""
+    if not razorpay_client:
+        reason = "Razorpay package not installed" if not RAZORPAY_AVAILABLE else "Razorpay credentials missing"
+        logger.error(f"Razorpay client is not initialized: {reason}")
+        raise HTTPException(
+            status_code=503,
+            detail=f"Payment service is currently unavailable ({reason}). Please try again later."
+        )
+
     try:
         # Verify booking exists and belongs to user
         booking = booking_crud.get_booking_by_id(db, order.booking_id)
@@ -731,22 +752,25 @@ def create_order(
             "booking_id": order.booking_id
         }
 
-    except razorpay.errors.BadRequestError as e:
-        logger.error(f"Razorpay API error: {str(e)}")
-        if "Authentication failed" in str(e):
-            raise HTTPException(
-                status_code=500,
-                detail="We're having trouble connecting to the payment system. Please try again later."
-            )
-        raise HTTPException(
-            status_code=400,
-            detail="There was a problem with the payment request. Please check and try again."
-        )
     except Exception as e:
-        logger.error(f"Error creating Razorpay order: {str(e)}")
+        # Check if it's a Razorpay error without direct reference if possible, 
+        # or use the fact that we know if razorpay is available
+        if razorpay and isinstance(e, razorpay.errors.BadRequestError):
+            logger.error(f"Razorpay API error: {str(e)}")
+            if "Authentication failed" in str(e):
+                raise HTTPException(
+                    status_code=500,
+                    detail="We're having trouble connecting to the payment system. Please try again later."
+                )
+            raise HTTPException(
+                status_code=400,
+                detail="There was a problem with the payment request. Please check and try again."
+            )
+        
+        logger.error(f"CRITICAL: Unexpected error in create_order: {str(e)}", exc_info=True)
         raise HTTPException(
             status_code=500,
-            detail="We couldn't create your payment order. Please try again."
+            detail=f"We couldn't create your payment order due to an internal error: {str(e)}"
         )
 
 

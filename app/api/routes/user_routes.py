@@ -5,16 +5,18 @@
 
 from fastapi import APIRouter, Depends, HTTPException, status, Request
 from sqlalchemy.orm import Session
-from app.core.security import create_access_token, get_current_user, get_db
+from app.core.security import create_access_token, get_current_user, get_db, SECRET_KEY, ALGORITHM
 from app.schemas import user_schema
 from app.crud import user_crud as crud_user
 from app.models.user import User
+from app.models.service_provider_model import ServiceProvider
 from app.core.dependencies import get_super_admin
 import logging
+from jose import jwt, JWTError
 
 logger = logging.getLogger(__name__)
 
-router = APIRouter(prefix="/users", tags=["User Management & Auth"])
+router = APIRouter(prefix="/users", tags=["Users"])
 
 
 # ================= REGISTRATION ENDPOINTS =================
@@ -72,7 +74,14 @@ def verify_user_otp(data: user_schema.OTPVerify, db: Session = Depends(get_db)):
     # Generate access token with role
     access_token = create_access_token(
         data={"sub": result["data"].email},
-        role="user"  # ✅ Important: Specify role for user
+        role="user"
+    )
+    
+    # Generate refresh token (30 days)
+    refresh_token = create_access_token(
+        data={"sub": result["data"].email},
+        token_type="refresh",
+        role="user"
     )
     
     logger.info(f"User verified successfully: {data.email}")
@@ -80,6 +89,7 @@ def verify_user_otp(data: user_schema.OTPVerify, db: Session = Depends(get_db)):
         "success": True,
         "message": result["message"],
         "access_token": access_token,
+        "refresh_token": refresh_token,
         "token_type": "bearer",
         "user": {
             "id": result["data"].id,
@@ -636,11 +646,19 @@ def refresh_access_token(
             role=role
         )
 
+        # Generate new refresh token (rotation)
+        new_refresh_token = create_access_token(
+            data={"sub": email},
+            token_type="refresh",
+            role=role
+        )
+
         logger.info(f"Access token refreshed for user: {email}")
         return {
             "success": True,
             "message": "Access token refreshed successfully",
             "access_token": new_access_token,
+            "refresh_token": new_refresh_token,
             "token_type": "bearer"
         }
 

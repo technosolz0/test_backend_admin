@@ -12,7 +12,7 @@ router = APIRouter(prefix="/categories", tags=["categories"])
 # -------------------------------------------------------------------
 # POST: Create New Category with compressed image
 # -------------------------------------------------------------------
-@router.post("/", response_model=CategoryOut, status_code=status.HTTP_201_CREATED)
+@router.post("", response_model=CategoryOut, status_code=status.HTTP_201_CREATED)
 def create_new_category(
     name: str = Form(...),
     status: CategoryStatus = Form(default=CategoryStatus.active),
@@ -41,7 +41,7 @@ def create_new_category(
 # -------------------------------------------------------------------
 # GET: List all categories
 # -------------------------------------------------------------------
-@router.get("/", response_model=list[CategoryOut])
+@router.get("", response_model=list[CategoryOut])
 def list_all_categories(db: Session = Depends(get_db)):
     return db.query(Category).all()
 
