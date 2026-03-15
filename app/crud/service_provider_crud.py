@@ -853,8 +853,8 @@ def update_vendor_work(db: Session, vendor_id: int, update: WorkDetailsUpdate) -
             logger.debug(f"Inserting charge: vendor_id={vendor_id}, subcategory_id={charge.subcategory_id}, service_charge={charge.service_charge}")
             vendor.subcategory_charges.append(new_charge)
 
-        if vendor.step == 2:
-            vendor.step = 4
+        if vendor.step == 1:
+            vendor.step = 2
         vendor.status = 'approved'
         vendor.last_device_update = datetime.utcnow()
         logger.debug(f"Committing changes for vendor_id: {vendor_id}")

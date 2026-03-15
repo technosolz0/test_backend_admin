@@ -64,15 +64,15 @@ class AddressDetailsUpdate(BaseModel):
     city: str
     pincode: str
     address_doc_type: str
-    address_doc_number: str
+    address_doc_number: Optional[str] = None
 
 class BankDetailsUpdate(BaseModel):
     account_holder_name: str
     account_number: str
     ifsc_code: str
-    upi_id: str
+    upi_id: Optional[str] = None
     bank_doc_type: str
-    bank_doc_number: str
+    bank_doc_number: Optional[str] = None
 
 class WorkDetailsUpdate(BaseModel):
     category_id: int

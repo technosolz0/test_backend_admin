@@ -248,7 +248,7 @@ def update_address_details(
     city: str = Form(...),
     pincode: str = Form(...),
     address_doc_type: str = Form(...),
-    address_doc_number: str = Form(...),
+    address_doc_number: Optional[str] = Form(None),
     db: Session = Depends(get_db),
     current_vendor: ServiceProvider = Depends(get_current_vendor)
 ):
@@ -286,9 +286,9 @@ def update_bank_details(
     account_holder_name: str = Form(...),
     account_number: str = Form(...),
     ifsc_code: str = Form(...),
-    upi_id: str = Form(...),
+    upi_id: Optional[str] = Form(None),
     bank_doc_type: str = Form(...),
-    bank_doc_number: str = Form(...),
+    bank_doc_number: Optional[str] = Form(None),
     db: Session = Depends(get_db),
     current_vendor: ServiceProvider = Depends(get_current_vendor)
 ):
