@@ -21,6 +21,8 @@ class ServiceProvider(Base):
     account_holder_name = Column(String)
     account_number = Column(String)
     ifsc_code = Column(String)
+    bank_name = Column(String)
+    branch_name = Column(String)
     upi_id = Column(String)
     identity_doc_type = Column(String)
     identity_doc_number = Column(String)

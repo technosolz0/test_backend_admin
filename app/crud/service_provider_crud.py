@@ -781,8 +781,8 @@ def update_vendor_bank(db: Session, vendor_id: int, update: BankDetailsUpdate) -
             account_holder_name=update.account_holder_name,
             account_number=update.account_number,
             ifsc_code=update.ifsc_code,
-            bank_name=None,  # Not in registration
-            branch_name=None,
+            bank_name=update.bank_name,
+            branch_name=update.branch_name,
             upi_id=update.upi_id,
             is_primary=True
         )
